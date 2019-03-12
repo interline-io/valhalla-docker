@@ -9,9 +9,11 @@
 
 ARG VALHALLA_VERSION=2.7.2
 ARG VALHALLA_REPO=https://github.com/valhalla/valhalla.git
+ARG PRIME_SERVER_TAG=0.6.4
 FROM ubuntu:18.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_REPO
+ARG PRIME_SERVER_TAG
 
 # Install base packages
 ENV DEBIAN_FRONTEND=noninteractive
@@ -62,7 +64,7 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /src && cd /src
 
 # prime_server
-RUN git clone -v https://github.com/irees/prime_server.git && (cd prime_server &&  git submodule update --init --recursive && git checkout --track origin/cmake-install-path && mkdir -p build && cd build && cmake .. && make -j2 install)
+RUN git clone -v --branch ${PRIME_SERVER_TAG} https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install)
 
 # valhalla
 RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout tags/${VALHALLA_VERSION} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF && make -j2 install) && rm -rf /src
@@ -73,9 +75,11 @@ RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git ch
 
 FROM ubuntu:18.04
 ARG VALHALLA_VERSION
+ARG VALHALLA_CONCURRENCY=1
 
 # Copy ARG to ENV
 ENV VALHALLA_VERSION=${VALHALLA_VERSION}
+ENV VALHALLA_CONCURRENCY=${VALHALLA_CONCURRENCY}
 
 # Utilities needed
 RUN apt-get update && apt-get install --no-install-recommends -y apt-transport-https curl libcurl4 ca-certificates gnupg && rm -rf /var/lib/apt/lists/*
@@ -113,5 +117,8 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/mod_spatialite.so.7.1.0 /usr/lib/x86_64-linu
 WORKDIR /build
 ENV WORKDIR=/build DATADIR=/data VALHALLA_CONFIG=/build/valhalla.json
 RUN mkdir -p ${WORKDIR} ${DATADIR}
+RUN valhalla_build_config > ${VALHALLA_CONFIG}
 ADD alias_tz.csv ${WORKDIR}
 
+# Default command
+CMD valhalla_service ${VALHALLA_CONFIG} ${VALHALLA_CONCURRENCY}
