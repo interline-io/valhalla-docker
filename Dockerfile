@@ -7,9 +7,9 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.0.9
+ARG VALHALLA_VERSION=3.1.0
 ARG VALHALLA_REPO=https://github.com/valhalla/valhalla.git
-ARG PRIME_SERVER_TAG=0.6.5
+ARG PRIME_SERVER_TAG=0.6.7
 FROM ubuntu:18.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_REPO
