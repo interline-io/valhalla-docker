@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y \
     libexpat1-dev \
     libgeos++-dev \
     libgeos-dev \
-    liblua5.2-dev \
+    libluajit-5.1-dev \
     liblz4-dev \
     libspatialite-dev \
     libsqlite3-dev \
@@ -45,7 +45,6 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-lite10 \
     libtool \
     libzmq3-dev \
-    lua5.2 \
     make \
     osmctools \
     osmosis \
@@ -92,7 +91,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libboost-regex1.65.1 \
     libboost-thread1.65.1 \
     libboost-program-options1.65.1 \
-    liblua5.2-0 \
+    libluajit-5.1-2 \
     libprotoc10 \
     libprotobuf-lite10 \
     libzmq5 \
