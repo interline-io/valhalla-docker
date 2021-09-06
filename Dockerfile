@@ -7,12 +7,12 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.1.3
-ARG VALHALLA_REPO=https://github.com/valhalla/valhalla.git
+ARG VALHALLA_VERSION=3.1.4-rc.1
+ARG VALHALLA_COMMIT=4856c4a081b8323fc36f2eb21a06c255850d5f04
 ARG PRIME_SERVER_TAG=0.7.0
 FROM ubuntu:18.04
 ARG VALHALLA_VERSION
-ARG VALHALLA_REPO
+ARG VALHALLA_COMMIT
 ARG PRIME_SERVER_TAG
 
 # Install base packages
@@ -71,7 +71,8 @@ RUN git clone -v --branch ${PRIME_SERVER_TAG} https://github.com/kevinkreiser/pr
 
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout tags/${VALHALLA_VERSION} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF && make -j2 install) && rm -rf /src
+# NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
