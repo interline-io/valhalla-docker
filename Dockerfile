@@ -7,10 +7,10 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.1.4
-ARG VALHALLA_COMMIT=ac824e5ca839d36a489e7123c5ed2920ecc3d674
+ARG VALHALLA_VERSION=3.1.5-rc.1
+ARG VALHALLA_COMMIT=72e986c2ac6fa483f24491a87a6a7362befa9b72
 ARG PRIME_SERVER_TAG=0.7.0
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
 ARG PRIME_SERVER_TAG
@@ -27,8 +27,6 @@ RUN apt-get update && apt-get install -y \
     git \
     jq \
     lcov \
-    libboost-all-dev \
-    libboost-python-dev \
     libbz2-dev \
     libcurl4-openssl-dev \
     libczmq-dev \
@@ -42,7 +40,6 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     libsqlite3-mod-spatialite \
     libprotobuf-dev \
-    libprotobuf-lite10 \
     libtool \
     libzmq3-dev \
     make \
@@ -51,9 +48,8 @@ RUN apt-get update && apt-get install -y \
     parallel \
     pkg-config \
     protobuf-compiler \
-    python-all-dev \
-    python-pip \
-    python-virtualenv \
+    python3-all-dev \
+    python3-pip \
     software-properties-common \
     spatialite-bin \
     vim-common \
@@ -64,6 +60,8 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
 ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
 
+RUN pip install conan
+
 RUN mkdir -p /src && cd /src
 
 # prime_server
@@ -72,13 +70,13 @@ RUN git clone -v --branch ${PRIME_SERVER_TAG} https://github.com/kevinkreiser/pr
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
 # #####################################
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_CONCURRENCY=1
 
@@ -91,20 +89,12 @@ RUN apt-get update && apt-get install --no-install-recommends -y apt-transport-h
 
 # Install apt packages packages
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    libboost-python1.62 \
-    libboost-filesystem1.62 \
-    libboost-iostreams1.62 \
-    libboost-regex1.62 \
-    libboost-thread1.62 \
-    libboost-program-options1.62 \
     libluajit-5.1-2 \
-    libprotoc10 \
-    libprotobuf-lite10 \
+    libprotobuf-dev \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
-    python-pip \
-    python-virtualenv \
+    python3-pip \
     spatialite-bin \
     jo \
     jq \
