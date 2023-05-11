@@ -7,13 +7,13 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.3.0
-ARG VALHALLA_COMMIT=ea7d44af37c47fcf0cb186e7ba0f9f77e96f202a
-ARG PRIME_SERVER_TAG=0.7.0
-FROM ubuntu:20.04
+ARG VALHALLA_VERSION=3.4.0
+ARG VALHALLA_COMMIT=cbabe7cfbad2225090e4c006c778f1f0a7b3ec4e
+ARG PRIME_SERVER_COMMIT=eaa396342417323d1a80fc649ddc66cc5a221dbc
+FROM ubuntu:22.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
-ARG PRIME_SERVER_TAG
+ARG PRIME_SERVER_COMMIT
 
 # Install base packages
 ENV DEBIAN_FRONTEND=noninteractive
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y \
     libexpat1-dev \
     libgeos++-dev \
     libgeos-dev \
-    libidn11 \
+    libidn11-dev \
     libluajit-5.1-dev \
     liblz4-dev \
     libspatialite-dev \
@@ -60,12 +60,12 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
 ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
 
-RUN pip install conan
+RUN pip install --upgrade "conan<2.0.0"
 
 RUN mkdir -p /src && cd /src
 
 # prime_server
-RUN git clone -v --branch ${PRIME_SERVER_TAG} https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install)
+RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git checkout ${PRIME_SERVER_COMMIT} && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install)
 
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
@@ -76,7 +76,7 @@ RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git ch
 # ############ STAGE 2 ################
 # #####################################
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_CONCURRENCY=1
 
