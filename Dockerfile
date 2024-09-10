@@ -7,10 +7,10 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.4.0
-ARG VALHALLA_COMMIT=cbabe7cfbad2225090e4c006c778f1f0a7b3ec4e
-ARG PRIME_SERVER_COMMIT=eaa396342417323d1a80fc649ddc66cc5a221dbc
-FROM ubuntu:22.04
+ARG VALHALLA_VERSION=3.5.0
+ARG VALHALLA_COMMIT=572c334cd21015fe75ac489cd001f79649d41d44
+ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
+FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
 ARG PRIME_SERVER_COMMIT
@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     jq \
     lcov \
     libbz2-dev \
+    libboost-all-dev \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
@@ -46,7 +47,7 @@ RUN apt-get update && apt-get install -y \
     osmctools \
     osmosis \
     parallel \
-    pkg-config \
+    pkgconf \
     protobuf-compiler \
     python3-all-dev \
     python3-pip \
@@ -60,8 +61,6 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
 ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
 
-RUN pip install --upgrade "conan<2.0.0"
-
 RUN mkdir -p /src && cd /src
 
 # prime_server
@@ -70,13 +69,13 @@ RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_serv
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
 # #####################################
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_CONCURRENCY=1
 
