@@ -1,4 +1,3 @@
-
 # Dockerfile to build Valhalla in stage 1, 
 #   then build our image by pulling out 
 #   the compiled Valhalla binaries from stage 1.
@@ -7,8 +6,8 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.5.0
-ARG VALHALLA_COMMIT=572c334cd21015fe75ac489cd001f79649d41d44
+ARG VALHALLA_VERSION=3.5.1
+ARG VALHALLA_COMMIT=d377c8ace9ea88dfa989466258bf738b1080f22a
 ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
