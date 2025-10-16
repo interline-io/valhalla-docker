@@ -79,8 +79,8 @@ ARG VALHALLA_VERSION
 ARG VALHALLA_CONCURRENCY=1
 
 # Copy ARG to ENV
-ENV VALHALLA_VERSION=${VALHALLA_VERSION}
-ENV VALHALLA_CONCURRENCY=${VALHALLA_CONCURRENCY}
+ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
+    VALHALLA_CONCURRENCY=${VALHALLA_CONCURRENCY}
 
 # Utilities needed
 RUN apt-get update && apt-get install --no-install-recommends -y apt-transport-https curl libcurl4 ca-certificates gnupg && rm -rf /var/lib/apt/lists/*
@@ -104,12 +104,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 COPY --from=0 /usr/local /usr/local
 
 # Fix things
-ENV LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:/usr/local/lib"
+ENV LD_LIBRARY_PATH="/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib32:/usr/lib32"
 RUN ln -s /usr/lib/x86_64-linux-gnu/mod_spatialite.so.7.1.0 /usr/lib/x86_64-linux-gnu/mod_spatialite
 
 # Setup
 WORKDIR /build
-ENV WORKDIR=/build DATADIR=/data VALHALLA_CONFIG=/build/valhalla.json
+ENV WORKDIR=/build \
+    DATADIR=/data \
+    VALHALLA_CONFIG=/build/valhalla.json
 RUN mkdir -p ${WORKDIR} ${DATADIR}
 RUN valhalla_build_config > ${VALHALLA_CONFIG}
 ADD alias_tz.csv ${WORKDIR}
