@@ -6,8 +6,8 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.6.0-rc1
-ARG VALHALLA_COMMIT=d391387b40c63ed64bab927db8f17a1498805ffe
+ARG VALHALLA_VERSION=3.6.0-rc2
+ARG VALHALLA_COMMIT=1db5523e3d11c111679abaa5323b633e20339f9c
 ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     libsqlite3-mod-spatialite \
     libprotobuf-dev \
+    libssl-dev \
     libtool \
     libzmq3-dev \
     make \
