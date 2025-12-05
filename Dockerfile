@@ -118,5 +118,10 @@ RUN mkdir -p ${WORKDIR} ${DATADIR}
 RUN valhalla_build_config > ${VALHALLA_CONFIG}
 ADD alias_tz.csv ${WORKDIR}
 
-# Default command
-CMD valhalla_service ${VALHALLA_CONFIG} ${VALHALLA_CONCURRENCY}
+# Create entrypoint script that uses env vars with exec for proper signal handling
+# The 'exec' replaces the shell process, making valhalla_service PID 1 for proper signal handling
+RUN echo '#!/bin/sh\nexec valhalla_service "${VALHALLA_CONFIG:-/build/valhalla.json}" "${VALHALLA_CONCURRENCY:-1}"' > /usr/local/bin/valhalla-entrypoint.sh && \
+    chmod +x /usr/local/bin/valhalla-entrypoint.sh
+
+# Default command - uses entrypoint which reads env vars
+ENTRYPOINT ["/usr/local/bin/valhalla-entrypoint.sh"]
