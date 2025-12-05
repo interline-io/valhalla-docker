@@ -6,9 +6,9 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.6.0-rc2
-ARG VALHALLA_COMMIT=1db5523e3d11c111679abaa5323b633e20339f9c
-ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
+ARG VALHALLA_VERSION=3.6.1
+ARG VALHALLA_COMMIT=93bd2167dfffcb257272b876e9e7dc9612f4cb10
+ARG PRIME_SERVER_COMMIT=77e61628d78e97ce59eea6e1eeb254d1e68edcb6
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
@@ -31,8 +31,10 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
+    libgdal-dev \
     libgeos++-dev \
     libgeos-dev \
+    libgeotiff-dev \
     libidn11-dev \
     libluajit-5.1-dev \
     liblz4-dev \
@@ -49,8 +51,7 @@ RUN apt-get update && apt-get install -y \
     parallel \
     pkgconf \
     protobuf-compiler \
-    python3-all-dev \
-    python3-pip \
+    python3 \
     software-properties-common \
     spatialite-bin \
     vim-common \
@@ -69,7 +70,7 @@ RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_serv
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
@@ -93,7 +94,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
-    python3-pip \
+    python3 \
     spatialite-bin \
     jo \
     jq \
