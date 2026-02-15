@@ -8,7 +8,7 @@
 
 ARG VALHALLA_VERSION=3.6.2
 ARG VALHALLA_COMMIT=c97b07687ee0d2e6cba5f9481ff370c30b710717
-ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
+ARG PRIME_SERVER_COMMIT=77e61628d78e97ce59eea6e1eeb254d1e68edcb6
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
@@ -31,9 +31,10 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
-    libgeotiff-dev \
+    libgdal-dev \
     libgeos++-dev \
     libgeos-dev \
+    libgeotiff-dev \
     libidn11-dev \
     libluajit-5.1-dev \
     liblz4-dev \
@@ -50,8 +51,7 @@ RUN apt-get update && apt-get install -y \
     parallel \
     pkgconf \
     protobuf-compiler \
-    python3-all-dev \
-    python3-pip \
+    python3 \
     software-properties-common \
     spatialite-bin \
     vim-common \
@@ -95,7 +95,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
-    python3-pip \
+    python3 \
     spatialite-bin \
     jo \
     jq \
@@ -119,5 +119,10 @@ RUN mkdir -p ${WORKDIR} ${DATADIR}
 RUN valhalla_build_config > ${VALHALLA_CONFIG}
 ADD alias_tz.csv ${WORKDIR}
 
-# Default command
-CMD valhalla_service ${VALHALLA_CONFIG} ${VALHALLA_CONCURRENCY}
+# Create entrypoint script that uses env vars with exec for proper signal handling
+# The 'exec' replaces the shell process, making valhalla_service PID 1 for proper signal handling
+RUN echo '#!/bin/sh\nexec valhalla_service "${VALHALLA_CONFIG:-/build/valhalla.json}" "${VALHALLA_CONCURRENCY:-1}"' > /usr/local/bin/valhalla-entrypoint.sh && \
+    chmod +x /usr/local/bin/valhalla-entrypoint.sh
+
+# Default command - uses entrypoint which reads env vars
+ENTRYPOINT ["/usr/local/bin/valhalla-entrypoint.sh"]
