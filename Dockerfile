@@ -95,6 +95,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
+    libgeotiff5 \
+    libgdal34t64 \
     python3 \
     spatialite-bin \
     jo \
