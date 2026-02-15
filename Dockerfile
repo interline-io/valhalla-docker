@@ -6,8 +6,8 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.6.0-rc2
-ARG VALHALLA_COMMIT=1db5523e3d11c111679abaa5323b633e20339f9c
+ARG VALHALLA_VERSION=3.6.2
+ARG VALHALLA_COMMIT=c97b07687ee0d2e6cba5f9481ff370c30b710717
 ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
+    libgeotiff-dev \
     libgeos++-dev \
     libgeos-dev \
     libidn11-dev \
@@ -57,7 +58,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     zlib1g-dev
 
-# install a more recent cmake than available through apt-get for Ubuntu 18.04
+# install a more recent cmake than available through apt-get
 RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
 ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
 
@@ -69,7 +70,8 @@ RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_serv
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
+# NOTE: -DENABLE_TESTS=OFF to skip test builds (not needed in production image)
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
