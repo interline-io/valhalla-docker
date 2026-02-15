@@ -6,9 +6,9 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.6.0-rc2
-ARG VALHALLA_COMMIT=1db5523e3d11c111679abaa5323b633e20339f9c
-ARG PRIME_SERVER_COMMIT=4508553b2dd29fadfafcc7c766aa6e9b94455fcb
+ARG VALHALLA_VERSION=3.6.2
+ARG VALHALLA_COMMIT=c97b07687ee0d2e6cba5f9481ff370c30b710717
+ARG PRIME_SERVER_COMMIT=77e61628d78e97ce59eea6e1eeb254d1e68edcb6
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
@@ -31,8 +31,10 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
+    libgdal-dev \
     libgeos++-dev \
     libgeos-dev \
+    libgeotiff-dev \
     libidn11-dev \
     libluajit-5.1-dev \
     liblz4-dev \
@@ -49,15 +51,14 @@ RUN apt-get update && apt-get install -y \
     parallel \
     pkgconf \
     protobuf-compiler \
-    python3-all-dev \
-    python3-pip \
+    python3 \
     software-properties-common \
     spatialite-bin \
     vim-common \
     wget \
     zlib1g-dev
 
-# install a more recent cmake than available through apt-get for Ubuntu 18.04
+# install a more recent cmake than available through apt-get
 RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
 ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
 
@@ -69,7 +70,8 @@ RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_serv
 # valhalla
 # NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
+# NOTE: -DENABLE_TESTS=OFF to skip test builds (not needed in production image)
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
@@ -93,7 +95,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
-    python3-pip \
+    libgeotiff5 \
+    libgdal34t64 \
+    python3 \
     spatialite-bin \
     jo \
     jq \
@@ -117,5 +121,10 @@ RUN mkdir -p ${WORKDIR} ${DATADIR}
 RUN valhalla_build_config > ${VALHALLA_CONFIG}
 ADD alias_tz.csv ${WORKDIR}
 
-# Default command
-CMD valhalla_service ${VALHALLA_CONFIG} ${VALHALLA_CONCURRENCY}
+# Create entrypoint script that uses env vars with exec for proper signal handling
+# The 'exec' replaces the shell process, making valhalla_service PID 1 for proper signal handling
+RUN echo '#!/bin/sh\nexec valhalla_service "${VALHALLA_CONFIG:-/build/valhalla.json}" "${VALHALLA_CONCURRENCY:-1}"' > /usr/local/bin/valhalla-entrypoint.sh && \
+    chmod +x /usr/local/bin/valhalla-entrypoint.sh
+
+# Default command - uses entrypoint which reads env vars
+ENTRYPOINT ["/usr/local/bin/valhalla-entrypoint.sh"]
