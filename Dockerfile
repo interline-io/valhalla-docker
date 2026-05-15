@@ -6,9 +6,9 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.6.3
-ARG VALHALLA_COMMIT=e2f017b16080f49203de245a211b09efab09cf72
-ARG PRIME_SERVER_COMMIT=77e61628d78e97ce59eea6e1eeb254d1e68edcb6
+ARG VALHALLA_VERSION=3.7.0
+ARG VALHALLA_COMMIT=72f459fc5661fb906ad424be5378c4e32d9a5b3b
+ARG PRIME_SERVER_COMMIT=762f2ca1efc7361a4f3800322f67391c7c21aa23
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
@@ -68,10 +68,9 @@ RUN mkdir -p /src && cd /src
 RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git checkout ${PRIME_SERVER_COMMIT} && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install)
 
 # valhalla
-# NOTE: -DENABLE_BENCHMARKS=OFF is because of https://github.com/valhalla/valhalla/issues/3200
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
 # NOTE: -DENABLE_TESTS=OFF to skip test builds (not needed in production image)
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_C_COMPILER=gcc -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_BENCHMARKS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j2 install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j$(nproc) install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
