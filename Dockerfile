@@ -6,13 +6,18 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.7.0
-ARG VALHALLA_COMMIT=72f459fc5661fb906ad424be5378c4e32d9a5b3b
-ARG PRIME_SERVER_COMMIT=762f2ca1efc7361a4f3800322f67391c7c21aa23
+ARG VALHALLA_VERSION=3.8.0
+ARG VALHALLA_COMMIT=eb343e23d59610b108c701ba0d0f5b0dd0b2cff3
+ARG PRIME_SERVER_COMMIT=5985bc63223c5f77c9cd1430bb92317bb08db2aa
+# Parallelism for the Valhalla compile. Defaults to all cores (used by CI).
+# Override for memory-constrained local builds, e.g. --build-arg MAKE_JOBS=2,
+# since each heavy C++ translation unit can use ~1-2 GB and -j$(nproc) can OOM.
+ARG MAKE_JOBS
 FROM ubuntu:24.04
 ARG VALHALLA_VERSION
 ARG VALHALLA_COMMIT
 ARG PRIME_SERVER_COMMIT
+ARG MAKE_JOBS
 
 # Install base packages
 ENV DEBIAN_FRONTEND=noninteractive
@@ -70,7 +75,7 @@ RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_serv
 # valhalla
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
 # NOTE: -DENABLE_TESTS=OFF to skip test builds (not needed in production image)
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j$(nproc) install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j"${MAKE_JOBS:-$(nproc)}" install) && rm -rf /src
 
 # #####################################
 # ############ STAGE 2 ################
