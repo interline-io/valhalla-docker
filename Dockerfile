@@ -6,8 +6,8 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.8.0
-ARG VALHALLA_COMMIT=eb343e23d59610b108c701ba0d0f5b0dd0b2cff3
+ARG VALHALLA_VERSION=3.8.1
+ARG VALHALLA_COMMIT=52705fa2641d172b5507e1e7a6401eb7c1f7d871
 ARG PRIME_SERVER_COMMIT=5985bc63223c5f77c9cd1430bb92317bb08db2aa
 # Parallelism for the Valhalla compile. Defaults to all cores (used by CI).
 # Override for memory-constrained local builds, e.g. --build-arg MAKE_JOBS=2,
