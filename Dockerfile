@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     build-essential \
+    cmake \
     curl \
     g++ \
     gcc \
@@ -64,19 +65,13 @@ RUN apt-get update && apt-get install -y \
     wget \
     zlib1g-dev
 
-# install a more recent cmake than available through apt-get
-RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
-ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
-
-RUN mkdir -p /src && cd /src
-
 # prime_server
-RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git checkout ${PRIME_SERVER_COMMIT} && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install)
+RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git checkout ${PRIME_SERVER_COMMIT} && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install) && rm -rf /prime_server
 
 # valhalla
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
 # NOTE: -DENABLE_TESTS=OFF to skip test builds (not needed in production image)
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j"${MAKE_JOBS:-$(nproc)}" install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j"${MAKE_JOBS:-$(nproc)}" install) && rm -rf /valhalla
 
 # #####################################
 # ############ STAGE 2 ################
