@@ -114,7 +114,6 @@ COPY --from=0 /usr/local /usr/local
 
 # Fix things
 ENV LD_LIBRARY_PATH="/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib32:/usr/lib32"
-RUN ln -s /usr/lib/x86_64-linux-gnu/mod_spatialite.so.7.1.0 /usr/lib/x86_64-linux-gnu/mod_spatialite
 
 # Setup
 WORKDIR /build
