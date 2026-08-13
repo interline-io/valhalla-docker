@@ -6,9 +6,10 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.8.1
-ARG VALHALLA_COMMIT=52705fa2641d172b5507e1e7a6401eb7c1f7d871
-ARG PRIME_SERVER_COMMIT=5985bc63223c5f77c9cd1430bb92317bb08db2aa
+ARG VALHALLA_VERSION=3.8.3
+ARG VALHALLA_COMMIT=a60c7cbfc83e073f50887cd27e0109d02e6b64e5
+# prime_server 0.13.1
+ARG PRIME_SERVER_COMMIT=0d41876997760e22396075aeb7873bffcffd8786
 # Parallelism for the Valhalla compile. Defaults to all cores (used by CI).
 # Override for memory-constrained local builds, e.g. --build-arg MAKE_JOBS=2,
 # since each heavy C++ translation unit can use ~1-2 GB and -j$(nproc) can OOM.
@@ -114,7 +115,6 @@ COPY --from=0 /usr/local /usr/local
 
 # Fix things
 ENV LD_LIBRARY_PATH="/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib32:/usr/lib32"
-RUN ln -s /usr/lib/x86_64-linux-gnu/mod_spatialite.so.7.1.0 /usr/lib/x86_64-linux-gnu/mod_spatialite
 
 # Setup
 WORKDIR /build
