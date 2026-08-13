@@ -8,7 +8,8 @@
 
 ARG VALHALLA_VERSION=3.8.3
 ARG VALHALLA_COMMIT=a60c7cbfc83e073f50887cd27e0109d02e6b64e5
-ARG PRIME_SERVER_COMMIT=5985bc63223c5f77c9cd1430bb92317bb08db2aa
+# prime_server 0.13.1
+ARG PRIME_SERVER_COMMIT=0d41876997760e22396075aeb7873bffcffd8786
 # Parallelism for the Valhalla compile. Defaults to all cores (used by CI).
 # Override for memory-constrained local builds, e.g. --build-arg MAKE_JOBS=2,
 # since each heavy C++ translation unit can use ~1-2 GB and -j$(nproc) can OOM.
