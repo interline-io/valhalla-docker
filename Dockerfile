@@ -85,13 +85,16 @@ ARG VALHALLA_CONCURRENCY=1
 ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
     VALHALLA_CONCURRENCY=${VALHALLA_CONCURRENCY}
 
-# Utilities needed
-RUN apt-get update && apt-get install --no-install-recommends -y apt-transport-https curl libcurl4 ca-certificates gnupg && rm -rf /var/lib/apt/lists/*
-
-# Install apt packages packages
+# Install run-time dependencies and utilities.
+# NOTE: libprotobuf-lite32t64, not libprotobuf-dev: Valhalla is built against
+# protobuf-lite, and the -dev package would only add unused headers and static
+# libs to the runtime image.
 RUN apt-get update && apt-get install --no-install-recommends -y \
+    ca-certificates \
+    curl \
+    libcurl4 \
     libluajit-5.1-2 \
-    libprotobuf-dev \
+    libprotobuf-lite32t64 \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
@@ -108,8 +111,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Copy previous installs
 COPY --from=0 /usr/local /usr/local
 
-# Fix things
-ENV LD_LIBRARY_PATH="/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib32:/usr/lib32"
+# COPY doesn't refresh the linker cache, so the libraries just copied into
+# /usr/local/lib (already on the default search path) wouldn't be found.
+RUN ldconfig
 
 # Setup
 WORKDIR /build
@@ -118,7 +122,7 @@ ENV WORKDIR=/build \
     VALHALLA_CONFIG=/build/valhalla.json
 RUN mkdir -p ${WORKDIR} ${DATADIR}
 RUN valhalla_build_config > ${VALHALLA_CONFIG}
-ADD alias_tz.csv ${WORKDIR}
+COPY alias_tz.csv ${WORKDIR}
 
 # Create entrypoint script that uses env vars with exec for proper signal handling
 # The 'exec' replaces the shell process, making valhalla_service PID 1 for proper signal handling
