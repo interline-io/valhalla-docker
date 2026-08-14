@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     build-essential \
+    cmake \
     curl \
     g++ \
     gcc \
@@ -64,19 +65,13 @@ RUN apt-get update && apt-get install -y \
     wget \
     zlib1g-dev
 
-# install a more recent cmake than available through apt-get
-RUN curl -sSL https://github.com/Kitware/CMake/releases/download/v3.21.1/cmake-3.21.1-linux-x86_64.tar.gz | tar -xzC /opt
-ENV PATH="/opt/cmake-3.21.1-linux-x86_64/bin/:${PATH}"
-
-RUN mkdir -p /src && cd /src
-
 # prime_server
-RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git checkout ${PRIME_SERVER_COMMIT} && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install)
+RUN git clone https://github.com/kevinkreiser/prime_server.git && (cd prime_server && git checkout ${PRIME_SERVER_COMMIT} && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. && make -j2 install) && rm -rf /prime_server
 
 # valhalla
 # NOTE: -ENABLE_SINGLE_FILES_WERROR=OFF because of https://github.com/valhalla/valhalla/issues/3157
 # NOTE: -DENABLE_TESTS=OFF to skip test builds (not needed in production image)
-RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j"${MAKE_JOBS:-$(nproc)}" install) && rm -rf /src
+RUN git clone https://github.com/valhalla/valhalla.git && (cd valhalla && git checkout ${VALHALLA_COMMIT} -b build && git submodule update --init --recursive && mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=OFF -DENABLE_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DENABLE_SINGLE_FILES_WERROR=OFF && make -j"${MAKE_JOBS:-$(nproc)}" install) && rm -rf /valhalla
 
 # #####################################
 # ############ STAGE 2 ################
@@ -90,13 +85,16 @@ ARG VALHALLA_CONCURRENCY=1
 ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
     VALHALLA_CONCURRENCY=${VALHALLA_CONCURRENCY}
 
-# Utilities needed
-RUN apt-get update && apt-get install --no-install-recommends -y apt-transport-https curl libcurl4 ca-certificates gnupg && rm -rf /var/lib/apt/lists/*
-
-# Install apt packages packages
+# Install run-time dependencies and utilities.
+# NOTE: libprotobuf-lite32t64, not libprotobuf-dev: Valhalla is built against
+# protobuf-lite, and the -dev package would only add unused headers and static
+# libs to the runtime image.
 RUN apt-get update && apt-get install --no-install-recommends -y \
+    ca-certificates \
+    curl \
+    libcurl4 \
     libluajit-5.1-2 \
-    libprotobuf-dev \
+    libprotobuf-lite32t64 \
     libzmq5 \
     libczmq4 \
     libsqlite3-mod-spatialite \
@@ -113,8 +111,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Copy previous installs
 COPY --from=0 /usr/local /usr/local
 
-# Fix things
-ENV LD_LIBRARY_PATH="/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib32:/usr/lib32"
+# COPY doesn't refresh the linker cache, so the libraries just copied into
+# /usr/local/lib (already on the default search path) wouldn't be found.
+RUN ldconfig
 
 # Setup
 WORKDIR /build
@@ -123,12 +122,12 @@ ENV WORKDIR=/build \
     VALHALLA_CONFIG=/build/valhalla.json
 RUN mkdir -p ${WORKDIR} ${DATADIR}
 RUN valhalla_build_config > ${VALHALLA_CONFIG}
-ADD alias_tz.csv ${WORKDIR}
+COPY alias_tz.csv ${WORKDIR}
 
-# Create entrypoint script that uses env vars with exec for proper signal handling
-# The 'exec' replaces the shell process, making valhalla_service PID 1 for proper signal handling
-RUN echo '#!/bin/sh\nexec valhalla_service "${VALHALLA_CONFIG:-/build/valhalla.json}" "${VALHALLA_CONCURRENCY:-1}"' > /usr/local/bin/valhalla-entrypoint.sh && \
-    chmod +x /usr/local/bin/valhalla-entrypoint.sh
+# Reads VALHALLA_CONFIG/VALHALLA_CONCURRENCY and execs valhalla_service as PID 1.
+COPY valhalla-entrypoint.sh /usr/local/bin/valhalla-entrypoint.sh
 
-# Default command - uses entrypoint which reads env vars
+# The entrypoint applies VALHALLA_CONFIG/VALHALLA_CONCURRENCY to this default
+# command, and runs any other command as given.
 ENTRYPOINT ["/usr/local/bin/valhalla-entrypoint.sh"]
+CMD ["valhalla_service"]
