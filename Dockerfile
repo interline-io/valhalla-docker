@@ -127,5 +127,7 @@ COPY alias_tz.csv ${WORKDIR}
 # Reads VALHALLA_CONFIG/VALHALLA_CONCURRENCY and execs valhalla_service as PID 1.
 COPY valhalla-entrypoint.sh /usr/local/bin/valhalla-entrypoint.sh
 
-# Default command - uses entrypoint which reads env vars
+# The entrypoint applies VALHALLA_CONFIG/VALHALLA_CONCURRENCY to this default
+# command, and runs any other command as given.
 ENTRYPOINT ["/usr/local/bin/valhalla-entrypoint.sh"]
+CMD ["valhalla_service"]

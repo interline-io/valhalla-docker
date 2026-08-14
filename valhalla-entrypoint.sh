@@ -1,10 +1,27 @@
 #!/bin/sh
 # Entrypoint for the Valhalla service image.
 #
-# 'exec' replaces this shell, so valhalla_service becomes PID 1 and receives
-# signals directly (needed for clean container shutdown).
+# Follows the docker-library convention: only apply Valhalla's defaults when
+# starting the service, and otherwise run whatever command was given, so that
+# `docker run <image> bash` and `docker run <image> valhalla_build_tiles ...`
+# behave as expected. See "consistency" in
+# https://github.com/docker-library/official-images
+#
+# 'exec' replaces this shell, so the process we start becomes PID 1 and
+# receives signals directly (needed for clean container shutdown).
 
 set -e
+
+# A bare flag is a flag for the service, not a command of its own, so that
+# e.g. `docker run <image> --version` reaches valhalla_service.
+case "$1" in
+    '' | -*) set -- valhalla_service "$@" ;;
+esac
+
+# Anything other than a plain `valhalla_service` runs exactly as given.
+if [ "$1" != valhalla_service ] || [ "$#" -ne 1 ]; then
+    exec "$@"
+fi
 
 VALHALLA_CONFIG="${VALHALLA_CONFIG:-/build/valhalla.json}"
 VALHALLA_CONCURRENCY="${VALHALLA_CONCURRENCY:-1}"

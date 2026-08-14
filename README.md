@@ -22,6 +22,13 @@ curl 'http://localhost:8002/status'
 
 If no tiles are found the container exits with an explanation rather than starting. Valhalla would otherwise come up normally and fail every request, which looks like a healthy container.
 
+Any other command runs as given, so the image doubles as a toolbox for the rest of the Valhalla binaries. The tile check only applies to the default service command:
+
+```
+docker run --rm -v /path/to/data:/data <image> valhalla_build_tiles -c /build/valhalla.json extract.osm.pbf
+docker run --rm -it <image> bash
+```
+
 ### Environment variables
 
 | Variable | Default | Purpose |
