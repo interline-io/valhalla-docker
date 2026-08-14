@@ -30,14 +30,27 @@ VALHALLA_CONCURRENCY="${VALHALLA_CONCURRENCY:-1}"
 # error, so the container looks healthy while serving nothing. Fail fast with an
 # explanation instead. Set VALHALLA_SKIP_TILE_CHECK=1 to bypass this, e.g. when
 # tiles are mounted after startup.
-if [ -z "${VALHALLA_SKIP_TILE_CHECK}" ] && [ -r "${VALHALLA_CONFIG}" ]; then
+# The config is parsed only if it is readable and valid JSON. Checking that up
+# front keeps `set -e` from aborting the script on a jq failure (an assignment
+# from a command substitution does propagate its exit status), which would kill
+# the container with a bare parse error instead of letting valhalla_service
+# report the config problem itself.
+if [ -z "${VALHALLA_SKIP_TILE_CHECK}" ] && [ -r "${VALHALLA_CONFIG}" ] &&
+   jq . "${VALHALLA_CONFIG}" >/dev/null 2>&1; then
     tile_extract=$(jq -r '.mjolnir.tile_extract // empty' "${VALHALLA_CONFIG}")
     tile_dir=$(jq -r '.mjolnir.tile_dir // empty' "${VALHALLA_CONFIG}")
 
     has_tiles=""
-    [ -n "${tile_extract}" ] && [ -f "${tile_extract}" ] && has_tiles=1
-    if [ -z "${has_tiles}" ] && [ -n "${tile_dir}" ] && [ -d "${tile_dir}" ]; then
-        [ -n "$(find "${tile_dir}" -name '*.gph' -print -quit 2>/dev/null)" ] && has_tiles=1
+    if [ -n "${tile_extract}" ] && [ -f "${tile_extract}" ]; then
+        has_tiles=1
+    elif [ -n "${tile_dir}" ] && [ -d "${tile_dir}" ]; then
+        # find's exit status is deliberately discarded: a partial walk (an
+        # unreadable subdirectory, a transient error) should still be treated as
+        # "no tiles found" and reach the message below, never abort the script.
+        found=$(find "${tile_dir}" -name '*.gph' -print -quit 2>/dev/null || true)
+        if [ -n "${found}" ]; then
+            has_tiles=1
+        fi
     fi
 
     if [ -z "${has_tiles}" ]; then
