@@ -60,15 +60,20 @@ if [ -z "${VALHALLA_SKIP_TILE_CHECK}" ] && [ -r "${VALHALLA_CONFIG}" ] &&
 Without tiles valhalla_service starts normally but fails every request, so the
 container looks healthy while serving nothing. Checked, per ${VALHALLA_CONFIG}:
 
-  tile_extract: ${tile_extract:-<unset>}
+  tile_extract: ${tile_extract:-<unset>} (no such file)
   tile_dir:     ${tile_dir:-<unset>} (no .gph tiles)
 
-Mount a tilepack over the tile extract path, for example:
+Mount an unpacked tile directory:
+
+  docker run -v /path/to/tiles:${tile_dir:-/data/valhalla}:ro -p 8002:8002 <image>
+
+or, if you have one, a tile extract built by valhalla_build_extract:
 
   docker run -v /path/to/tiles.tar:${tile_extract:-/data/valhalla/tiles.tar}:ro -p 8002:8002 <image>
 
-Tilepacks are available at https://www.interline.io/valhalla/tilepacks/ and can
-be fetched with planetutils' valhalla_tilepack_download.
+Interline Valhalla Tilepacks (https://www.interline.io/valhalla/tilepacks/,
+fetched with planetutils' valhalla_tilepack_download) ship as a gzipped tile
+directory rather than a tile extract, so unpack one and mount the directory.
 
 Set VALHALLA_SKIP_TILE_CHECK=1 to start anyway.
 EOF
