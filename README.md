@@ -8,11 +8,13 @@ Bring your own tiles. Or use PlanetUtils and its [`valhalla_tilepack_download`](
 
 ## Usage
 
-The default entrypoint runs `valhalla_service`, which listens on port **8002**. Tiles are not included in the image, so mount a tilepack at the path the bundled config expects (`/data/valhalla/tiles.tar`):
+The default entrypoint runs `valhalla_service`, which listens on port **8002**. Tiles are not included in the image. The bundled config reads them from either an unpacked tile directory at `/data/valhalla`, or a `valhalla_build_extract` tile extract at `/data/valhalla/tiles.tar`:
 
 ```
-docker run -p 8002:8002 -v /path/to/tiles.tar:/data/valhalla/tiles.tar:ro ghcr.io/interline-io/valhalla-docker/valhalla:latest
+docker run -p 8002:8002 -v /path/to/tiles:/data/valhalla:ro ghcr.io/interline-io/valhalla-docker/valhalla:latest
 ```
+
+Note that [Valhalla Tilepacks](https://www.interline.io/valhalla/tilepacks/) ship as a gzipped tile *directory*, not a tile extract, so unpack one and mount the directory as above — mounting the tarball itself at `/data/valhalla/tiles.tar` will not work.
 
 Then query it:
 
