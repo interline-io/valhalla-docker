@@ -6,8 +6,8 @@
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.8.3
-ARG VALHALLA_COMMIT=a60c7cbfc83e073f50887cd27e0109d02e6b64e5
+ARG VALHALLA_VERSION=3.9.0
+ARG VALHALLA_COMMIT=a3a5631c4d243eee9a09241f4ffe6680a67dd55a
 # prime_server 0.13.1
 ARG PRIME_SERVER_COMMIT=0d41876997760e22396075aeb7873bffcffd8786
 # Parallelism for the Valhalla compile. Defaults to all cores (used by CI).
