@@ -81,7 +81,11 @@ ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
 # NOTE: no libgdal34t64. Nothing here links GDAL, and it pulled in 50 more
 # packages (MySQL and PostgreSQL client libraries, poppler, HDF5, ...) that
 # only added size and CVEs.
-RUN apt-get update && apt-get install --no-install-recommends -y \
+# NOTE: apt-get upgrade because the ubuntu:24.04 image is only refreshed every
+# few weeks, and installing packages doesn't upgrade the ones it already ships
+# (glibc, perl, apt, ...), so security fixes already published for them would
+# otherwise be missing from the image.
+RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y \
     ca-certificates \
     curl \
     libcurl4 \
