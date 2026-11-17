@@ -1,29 +1,41 @@
 name: Docker
 
+# Images are built only for release tags, and each is published under its
+# version tag and as latest. Merges to main don't build.
 on:
   push:
-    branches:
-      - main
-      - master
     tags:
       - v*
+
+# Tag builds run one at a time, in the order they were queued, so the newest
+# release is the last to publish latest. queue: max lets every waiting build
+# queue; the default would cancel a pending release build when another tag is
+# pushed.
+concurrency:
+  group: ${{ github.workflow }}
+  queue: max
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/valhalla
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    # A full build takes ~13 minutes; anything past this is stuck.
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Log in to the Container registry
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -33,12 +45,18 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+          flavor: |
+            latest=false
+      # No build cache: a tag's run can't restore caches made for other tags,
+      # and with no main builds there's no default-branch cache either, so
+      # exporting one would only cost upload time.
       - name: Build and push Docker image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
