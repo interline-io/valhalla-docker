@@ -1,13 +1,9 @@
-# Dockerfile to build Valhalla in stage 1, 
-#   then build our image by pulling out 
-#   the compiled Valhalla binaries from stage 1.
-
 # #####################################
 # ############ STAGE 1 ################
 # #####################################
 
-ARG VALHALLA_VERSION=3.9.0
-ARG VALHALLA_COMMIT=a3a5631c4d243eee9a09241f4ffe6680a67dd55a
+ARG VALHALLA_VERSION=3.9.2
+ARG VALHALLA_COMMIT=a919bb6b64d61d12f79ea5466d5cf599a39714ad
 # prime_server 0.13.1
 ARG PRIME_SERVER_COMMIT=0d41876997760e22396075aeb7873bffcffd8786
 # Parallelism for the Valhalla compile. Defaults to all cores (used by CI).
@@ -20,49 +16,38 @@ ARG VALHALLA_COMMIT
 ARG PRIME_SERVER_COMMIT
 ARG MAKE_JOBS
 
-# Install base packages
+# Install build dependencies: what the prime_server and Valhalla CMake builds
+# look for, plus the toolchain and git to fetch the sources.
+# NOTE: spatialite-bin is a build dependency, not only a runtime one: Valhalla's
+# CMake fails without the spatialite and spatialite_tool executables.
+# NOTE: no libgdal-dev. Valhalla's GeoTIFF support (isochrone raster output)
+# uses libgeotiff and libtiff directly; nothing links GDAL.
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    autoconf \
-    automake \
     build-essential \
+    ca-certificates \
     cmake \
-    curl \
     g++ \
     gcc \
     git \
-    jq \
-    lcov \
-    libbz2-dev \
     libboost-all-dev \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
-    libgdal-dev \
     libgeos++-dev \
     libgeos-dev \
     libgeotiff-dev \
-    libidn11-dev \
     libluajit-5.1-dev \
     liblz4-dev \
     libspatialite-dev \
     libsqlite3-dev \
-    libsqlite3-mod-spatialite \
     libprotobuf-dev \
     libssl-dev \
-    libtool \
     libzmq3-dev \
     make \
-    osmctools \
-    osmosis \
-    parallel \
     pkgconf \
     protobuf-compiler \
-    python3 \
-    software-properties-common \
     spatialite-bin \
-    vim-common \
-    wget \
     zlib1g-dev
 
 # prime_server
@@ -89,7 +74,7 @@ ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
 # NOTE: libprotobuf-lite32t64, not libprotobuf-dev: Valhalla is built against
 # protobuf-lite, and the -dev package would only add unused headers and static
 # libs to the runtime image.
-RUN apt-get update && apt-get install --no-install-recommends -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y \
     ca-certificates \
     curl \
     libcurl4 \
@@ -99,7 +84,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libczmq4 \
     libsqlite3-mod-spatialite \
     libgeotiff5 \
-    libgdal34t64 \
     python3 \
     spatialite-bin \
     jo \
