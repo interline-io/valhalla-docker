@@ -20,49 +20,38 @@ ARG VALHALLA_COMMIT
 ARG PRIME_SERVER_COMMIT
 ARG MAKE_JOBS
 
-# Install base packages
+# Install build dependencies: what the prime_server and Valhalla CMake builds
+# look for, plus the toolchain and git to fetch the sources.
+# NOTE: spatialite-bin is a build dependency, not only a runtime one: Valhalla's
+# CMake fails without the spatialite and spatialite_tool executables.
+# NOTE: no libgdal-dev. Valhalla's GeoTIFF support (isochrone raster output)
+# uses libgeotiff and libtiff directly; nothing links GDAL.
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    autoconf \
-    automake \
     build-essential \
+    ca-certificates \
     cmake \
-    curl \
     g++ \
     gcc \
     git \
-    jq \
-    lcov \
-    libbz2-dev \
     libboost-all-dev \
     libcurl4-openssl-dev \
     libczmq-dev \
     libexpat1-dev \
-    libgdal-dev \
     libgeos++-dev \
     libgeos-dev \
     libgeotiff-dev \
-    libidn11-dev \
     libluajit-5.1-dev \
     liblz4-dev \
     libspatialite-dev \
     libsqlite3-dev \
-    libsqlite3-mod-spatialite \
     libprotobuf-dev \
     libssl-dev \
-    libtool \
     libzmq3-dev \
     make \
-    osmctools \
-    osmosis \
-    parallel \
     pkgconf \
     protobuf-compiler \
-    python3 \
-    software-properties-common \
     spatialite-bin \
-    vim-common \
-    wget \
     zlib1g-dev
 
 # prime_server
@@ -89,6 +78,9 @@ ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
 # NOTE: libprotobuf-lite32t64, not libprotobuf-dev: Valhalla is built against
 # protobuf-lite, and the -dev package would only add unused headers and static
 # libs to the runtime image.
+# NOTE: no libgdal34t64. Nothing here links GDAL, and it pulled in 50 more
+# packages (MySQL and PostgreSQL client libraries, poppler, HDF5, ...) that
+# only added size and CVEs.
 RUN apt-get update && apt-get install --no-install-recommends -y \
     ca-certificates \
     curl \
@@ -99,7 +91,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libczmq4 \
     libsqlite3-mod-spatialite \
     libgeotiff5 \
-    libgdal34t64 \
     python3 \
     spatialite-bin \
     jo \
