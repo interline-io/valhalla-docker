@@ -7,14 +7,36 @@ on:
       - master
     tags:
       - v*
+    # Changes that can't affect the image don't rebuild it. Path filters aren't
+    # evaluated for tag pushes, so a release tag always builds.
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE.txt'
+
+# A newer push to a branch cancels the build it supersedes, which also keeps an
+# older merge's build from publishing :main and :latest after a newer one's.
+# Each tag is its own group, and tag builds are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type == 'branch' }}
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/valhalla
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    # A full build takes ~13 minutes; anything past this is stuck.
+    timeout-minutes: 60
+    # Merging a release and pushing its tag build the same commit. Queue
+    # whichever starts second behind the first, so it reuses the first's layer
+    # cache instead of compiling Valhalla again in parallel.
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ github.sha }}
     permissions:
       contents: read
       packages: write
@@ -33,12 +55,21 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # The branch or tag name, and latest only from main. Release tag
+          # builds used to push latest too, racing the main build of the same
+          # commit, and whichever finished last won.
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=false
       - name: Build and push Docker image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
