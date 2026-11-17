@@ -1,7 +1,3 @@
-# Dockerfile to build Valhalla in stage 1, 
-#   then build our image by pulling out 
-#   the compiled Valhalla binaries from stage 1.
-
 # #####################################
 # ############ STAGE 1 ################
 # #####################################
@@ -78,13 +74,6 @@ ENV VALHALLA_VERSION=${VALHALLA_VERSION} \
 # NOTE: libprotobuf-lite32t64, not libprotobuf-dev: Valhalla is built against
 # protobuf-lite, and the -dev package would only add unused headers and static
 # libs to the runtime image.
-# NOTE: no libgdal34t64. Nothing here links GDAL, and it pulled in 50 more
-# packages (MySQL and PostgreSQL client libraries, poppler, HDF5, ...) that
-# only added size and CVEs.
-# NOTE: apt-get upgrade because the ubuntu:24.04 image is only refreshed every
-# few weeks, and installing packages doesn't upgrade the ones it already ships
-# (glibc, perl, apt, ...), so security fixes already published for them would
-# otherwise be missing from the image.
 RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends -y \
     ca-certificates \
     curl \
